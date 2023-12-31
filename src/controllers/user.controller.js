@@ -4,6 +4,7 @@ import {User} from "../model/user.model,js"
 import {uploadOnCloudinary} from "../utils/cloudinary.js"
 import {ApiResponse} from "../utils/ApiResponse.js";
 import { Jwt } from "jsonwebtoken";
+import mongoose from "mongoose";
 const genrateAccessTokenAndRefreshTokens = async(userid)=>{
     try{
       const user =  await User.findById(userid)
@@ -344,6 +345,65 @@ const loginUser = asyncHandler(async (req, res)=>{
         new ApiResponse(200, chanle[0], "User channel fetched successfully")
         
        )
+
+    })
+
+    const getWatchHistory = asyncHandler(async(req, res)=>{
+        // req.user._id//string milegi 
+        const user = await User.aggregate([
+            {
+                $match: {
+                    _id: new mongoose.Types.ObjectId(req.user._id)
+                }
+            },
+                $lookup: {
+                    from: "Videos",
+                    localField: "watchHistory",
+                    foreignField: "_id",
+                    as: "watchHistory",
+                    pipeline: [
+                        {
+                            $lookup: {
+                                from: "users",
+                                localField: "owner",
+                                foreignField: "_id",
+                                as: "owner",
+                                pipeline: [
+                                    {
+                                        $project: {
+                                            fullname: 1,
+                                            username: 1,
+                                            avtar: 1
+                                        }
+                                    },
+                                    {
+                                        $addField: {
+                                            owner:{
+                                                $first: "$owner"
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+        
+                }
+               }
+            
+            
+        
+        ])
+        return res
+        .status(200)
+        .json(
+            new ApiResponse(
+                200,
+                user[0].watchHistory,
+                "Watch History fetched successfully"
+            )
+        )
+       
     })
    export {
        registerUser,
@@ -354,7 +414,6 @@ const loginUser = asyncHandler(async (req, res)=>{
        getCurrentUser,
        updateAccountDetails,
        updateUserAvtar,
-       getUserChanleProfile,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
-
-};
+       getUserChanleProfile,     
+       getWatchHistory,                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
+    };
