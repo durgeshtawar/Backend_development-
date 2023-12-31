@@ -227,7 +227,7 @@ const loginUser = asyncHandler(async (req, res)=>{
     const getCurrentUser = asyncHandler(async(req, res)=>{
         return res
         .status(200)
-        .json(200, res.user, "current user fetched successfully")
+        .json(new ApiResponse(200, res.user, "current user fetched successfully"))
 
     }  )      
     
