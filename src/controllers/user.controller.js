@@ -275,6 +275,76 @@ const loginUser = asyncHandler(async (req, res)=>{
                 {new:true}
              ).select("-password")
     })
+    const getUserChanleProfile = asyncHandler(async(req, res)=>{
+       const {username} =    req.params
+
+       if(!username?.trim()){
+        throw new ApiError(400, "User name is missing")
+       }
+
+       const chanle = await User.aggregate([
+        {
+            $match: {
+                username: username?.toLowerCase(),
+
+            }
+        },
+        {
+            $lookup: {
+                from: "subscription",
+                localField: "_id",
+                foreignField: "chanle",
+                as: "subscribers"
+            }
+        },
+        {
+            $lookup: {
+                from: "subscription",
+                localField: "_id",
+                foreignField: "Subscriber",
+                as: "subscribed2"//chanle  subscribe you
+
+            }
+        },
+        {
+            $addField: {
+                subscribersCount: {
+                    $size: "$subscribers"
+                },
+                channelSubscribeToCount: {
+                    $size: "$subscribed2"
+                },
+                isSubscribed: {
+                    $cond: {
+                        if: {$in: [req.user?._id, "$subscribers.subscriber"]},
+                        then: true,
+                        else: false
+                    }
+                }
+            }
+        },
+        {
+            $project: {
+                fullname: 1,
+                username: 1,
+                subscriberCount: 1,
+                channelSubscribeToCount: 1,
+                isSubscribed: 1,
+                avtar: 1,
+                coverImage: 1,
+                email: 1,
+            }
+        }
+       ])
+       if(!chanle?.length){
+        throw new ApiError(404 , "Chanle does not exists")
+       }
+       return res.status(200)
+       .json(
+        new ApiResponse(200, chanle[0], "User channel fetched successfully")
+        
+       )
+    })
    export {
        registerUser,
        loginUser,
@@ -284,6 +354,7 @@ const loginUser = asyncHandler(async (req, res)=>{
        getCurrentUser,
        updateAccountDetails,
        updateUserAvtar,
+       getUserChanleProfile,
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
 
 };
